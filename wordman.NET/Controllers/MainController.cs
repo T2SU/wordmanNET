@@ -63,6 +63,7 @@ namespace wordman.Controllers
         [Route("change_detail")]
         public async Task<IActionResult> ChangeDetail(string word, string detail_type, string oldone, string newone)
         {
+            // 뇌정지 ㅜㅜ
         }
     }
 }
