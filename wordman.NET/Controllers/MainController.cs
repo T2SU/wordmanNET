@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using wordman.Models;
 using wordman.Mvc;
 using wordman.SQLite;
 using wordman.Utils;
@@ -17,18 +18,29 @@ namespace wordman.Controllers
     {
         [Route("")]
         [Route("index")]
-        public async Task<IActionResult> Index(int page = 1)
+        public async Task<IActionResult> Index(WordViewModel model)
         {
             using (var ctx = new WordContext())
             using (var t = await ctx.Database.BeginTransactionAsync())
             {
                 var state = new ListState();
+                var filters = new List<Func<Word, bool>>();
 
                 ViewBag.AppVer = App.Version;
-                ViewBag.Data = await WordManipulator.LoadWordsUsingDefault(ctx, state, page);
-                ViewBag.Page = page;
+
+                if (model.Keyword != null)
+                {
+                    filters.Add(w => w.Content.Contains(model.Keyword));
+                }
+                ViewBag.Data = await WordManipulator.LoadWords(ctx, state,
+                    w => w.WordID,
+                    w => w.Compact(),
+                    model,
+                    PageUtils.LimitPerPage,
+                    filters.ToArray());
                 ViewBag.State = state;
-                return View();
+
+                return View(model);
             }
         }
 

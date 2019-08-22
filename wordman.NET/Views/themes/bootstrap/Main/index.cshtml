@@ -1,5 +1,7 @@
-﻿@using wordman.SQLite
+﻿@using wordman.Models
+@using wordman.SQLite
 @using wordman.Utils
+@model WordViewModel
 
 <!DOCTYPE html>
 <html>
@@ -32,7 +34,7 @@
                     </li>
                 </ul>
                 <form class="form-inline my-1 my-lg-0">
-                    <input class="form-control mr-sm-1" type="search" placeholder="Search" aria-label="Search">
+                    @Html.TextBoxFor(model => model.Keyword, new { @class = "form-control mr-sm-1", type = "search", placeholder = "Search" })
                     <button class="btn btn-outline-light my-2 my-sm-0" type="submit">Search</button>
                 </form>
                 <div class="form-inline my-1 my-lg-0 mx-1">
@@ -69,50 +71,50 @@
         <div class="container">
             <nav aria-label="Pagination">
                 <ul class="pagination justify-content-center">
-                @{
-                int mag = (PageUtils.MaxShowPageCount - 1) / 2;
-                int minPage = Math.Max(1, ViewBag.Page - mag);
-                int maxPage = Math.Min(ViewBag.Page + mag, PageUtils.GetMaxPage(ViewBag.State.TotalCount));
-                if (ViewBag.Page == 1)
-                {
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#" tabindex="-1">«</a>
-                    </li>
-                }
-                else
-                {
-                    <li class="page-item">
-                        <a class="page-link" href="@Url.Action("Index", "Main", new { page = ViewBag.Page - 1 })" tabindex="-1">«</a>
-                    </li>
-                }
-                for (int i = minPage; i <= maxPage; ++i)
-                {
-                    if (i == ViewBag.Page)
-                    {
-                        <li class="page-item active">
-                            <a class="page-link" href="#">@i <span class="sr-only">(current)</span></a>
-                        </li>
+                    @{
+                        int mag = (PageUtils.MaxShowPageCount - 1) / 2;
+                        int minPage = Math.Max(1, Model.Page - mag);
+                        int maxPage = Math.Min(Model.Page + mag, PageUtils.GetMaxPage(ViewBag.State.TotalCount));
+                        if (Model.Page == 1)
+                        {
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">«</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("", "Main", Model.CopyByPage(Model.Page - 1))" tabindex="-1">«</a>
+                            </li>
+                        }
+                        for (int i = minPage; i <= maxPage; ++i)
+                        {
+                            if (i == Model.Page)
+                            {
+                                <li class="page-item active">
+                                    <a class="page-link" href="#">@i <span class="sr-only">(current)</span></a>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("", "Main", Model.CopyByPage(i))">@i</a>
+                                </li>
+                            }
+                        }
+                        if (Model.Page == maxPage)
+                        {
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">»</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("", "Main", Model.CopyByPage(Model.Page + 1))" tabindex="-1">»</a>
+                            </li>
+                        }
                     }
-                    else
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", "Main", new { page = i })">@i</a>
-                        </li>
-                    }
-                }
-                if (ViewBag.Page == maxPage)
-                {
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#" tabindex="-1">»</a>
-                    </li>
-                }
-                else
-                {
-                    <li class="page-item">
-                        <a class="page-link" href="@Url.Action("Index", "Main", new { page = ViewBag.Page + 1 })" tabindex="-1">»</a>
-                    </li>
-                }
-                }
                 </ul>
             </nav>
         </div>

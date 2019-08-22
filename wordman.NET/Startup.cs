@@ -65,7 +65,7 @@ namespace wordman.NET
             
             app.UseMvc(routes =>
             {
-                routes.MapRoute("default", "{action=index}/{page?}", defaults: new { controller = "main" });
+                routes.MapRoute("default", "{action=index}", defaults: new { controller = "main" });
             });
         }
     }

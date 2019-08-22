@@ -6,6 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using wordman.Models;
 using wordman.SQLite;
 using wordman.Utils;
 
@@ -35,16 +36,6 @@ namespace wordman.Words
         }
 
         /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="page"></param>
-        /// <returns></returns>
-        public static async Task<List<Word>> LoadWordsUsingDefault(WordContext ctx, ListState state, int page)
-        {
-            return await LoadWords<Word, int, Word>(ctx, state, w => w.WordID, w => w.Compact(), Order.Desc, page);
-        }
-
-        /// <summary>
         /// Retrieve a word list using the specified criteria.
         /// </summary>
         /// <typeparam name="TInType">An object type mapped to words stored in the database</typeparam>
@@ -59,8 +50,7 @@ namespace wordman.Words
         public static async Task<List<TRetType>> LoadWords<TInType, TOrderingType, TRetType>(WordContext ctx, ListState state,
             Func<TInType, TOrderingType> keyExpr,
                 Func<TInType, TRetType> selector,
-                Order order,
-                int page,
+                WordViewModel model,
                 int limit = PageUtils.LimitPerPage,
                 params Func<TInType, bool>[] filters)
             where TInType : class where TRetType : class
@@ -74,7 +64,7 @@ namespace wordman.Words
             var param = Expression.Parameter(typeof(TInType), "w");
 
             IEnumerable<TInType> query = ctx.Set<TInType>();
-            switch (order)
+            switch (model.Order)
             {
                 case Order.Asc:
                     query = query.OrderBy(keyExpr);
@@ -92,7 +82,7 @@ namespace wordman.Words
 
             state.TotalCount = query.Count();
 
-            query = query.Skip((page - 1) * limit);
+            query = query.Skip((model.Page - 1) * limit);
             query = query.Take(limit);
 
             return await query
