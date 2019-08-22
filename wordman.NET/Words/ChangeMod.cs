@@ -9,7 +9,7 @@ namespace wordman.Words
     public enum ChangeMod
     {
         Del = 1,
-        Add = 2,
-        Mod = Del | Add
+        New = 2,
+        Mod = Del | New
     }
 }

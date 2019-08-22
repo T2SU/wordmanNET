@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -19,9 +20,11 @@ namespace wordman.SQLite
 
         public DateTime LastReferenced { get; set; }
 
-        public List<RelatedWord> RelatedWords { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<RelatedWord> RelatedWords { get; set; } = new List<RelatedWord>();
 
-        public List<RelatedString> RelatedStrings { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<RelatedString> RelatedStrings { get; set; } = new List<RelatedString>();
 
         public Word Compact()
         {

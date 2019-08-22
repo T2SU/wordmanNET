@@ -54,19 +54,19 @@ namespace wordman.Controllers
 
         [HttpPost]
         [Route("get_detail")]
-        public async Task<IActionResult> GetDetail(string word, string detail_type)
+        public async Task<IActionResult> GetDetail(string word, RelatedType detail_type)
         {
             using (var ctx = new WordContext())
             using (var t = await ctx.Database.BeginTransactionAsync())
             {
                 switch (detail_type)
                 {
-                    case "example":
-                        return new JsonResult(await WordManipulator.GetRelatedStrings(ctx, RelatedStringType.Example, word));
-                    case "synonym":
-                        return new JsonResult(await WordManipulator.GetRelatedWords(ctx, RelatedWordType.Synonym, word));
-                    case "antonym":
-                        return new JsonResult(await WordManipulator.GetRelatedWords(ctx, RelatedWordType.Antonym, word));
+                    case RelatedType.Example:
+                        return new JsonResult(await WordManipulator.GetRelatedStrings(ctx, RelatedType.Example, word));
+                    case RelatedType.Synonym:
+                        return new JsonResult(await WordManipulator.GetRelatedWords(ctx, RelatedType.Synonym, word));
+                    case RelatedType.Antonym:
+                        return new JsonResult(await WordManipulator.GetRelatedWords(ctx, RelatedType.Antonym, word));
                     default:
                         return new StatusCodeResult(StatusCodes.Status400BadRequest);
                 }
@@ -75,19 +75,18 @@ namespace wordman.Controllers
 
         [HttpPost]
         [Route("change_detail")]
-        public async Task<IActionResult> ChangeDetail(string word, string detail_type, string oldone, string newone)
+        public async Task<IActionResult> ChangeDetail(string word, RelatedType detail_type, string oldone, string newone)
         {
             using (var ctx = new WordContext())
-            using (var t = await ctx.Database.BeginTransactionAsync())
             {
                 switch (detail_type)
                 {
-                    case "example":
-                        return new EnumResult(await WordManipulator.ChangeRelatedString(ctx, RelatedStringType.Example, word, oldone, newone));
-                    case "synonym":
-                        return new EnumResult(await WordManipulator.ChangeRelatedWord(ctx, RelatedWordType.Synonym, word, oldone, newone));
-                    case "antonym":
-                        return new EnumResult(await WordManipulator.ChangeRelatedWord(ctx, RelatedWordType.Antonym, word, oldone, newone));
+                    case RelatedType.Example:
+                        return new EnumResult(await WordManipulator.ChangeRelatedString(ctx, RelatedType.Example, word, oldone, newone));
+                    case RelatedType.Synonym:
+                        return new EnumResult(await WordManipulator.ChangeRelatedWord(ctx, RelatedType.Synonym, word, oldone, newone));
+                    case RelatedType.Antonym:
+                        return new EnumResult(await WordManipulator.ChangeRelatedWord(ctx, RelatedType.Antonym, word, oldone, newone));
                     default:
                         return new StatusCodeResult(StatusCodes.Status400BadRequest);
                 }

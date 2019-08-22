@@ -1,7 +1,11 @@
 ﻿namespace wordman.Words
 {
-    public enum RelatedWordType
+    public enum RelatedType
     {
+        None,
+
+        Example,
+
         Synonym,
         Antonym
     }

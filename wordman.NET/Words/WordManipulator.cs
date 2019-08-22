@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Storage;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,114 +92,168 @@ namespace wordman.Words
                 .ToList();
         }
 
-        public static async Task<List<RelatedWord>> GetRelatedWords(WordContext ctx, RelatedWordType type, string word)
+        public static async Task<List<string>> GetRelatedWords(WordContext ctx, RelatedType type, string word)
         {
             if (string.IsNullOrWhiteSpace(word)) throw new ArgumentNullException(nameof(word));
+            if (!Enum.IsDefined(typeof(RelatedType), type) || type == RelatedType.None) throw new ArgumentException(nameof(type));
             var word_data = await ctx.Words
                 .Where(w => w.Content == word)
+                .Include(w => w.RelatedWords)
                 .ToAsyncEnumerable()
                 .SingleOrDefault();
             return await word_data.RelatedWords
                 .Where(rw => rw.Type == type)
+                .Join(ctx.Words, a => a.RelatedWordID, i => i.WordID, (a, i) => i.Content)
                 .ToAsyncEnumerable()
                 .ToList();
         }
 
-        public static async Task<List<RelatedString>> GetRelatedStrings(WordContext ctx, RelatedStringType type, string word)
+        public static async Task<List<string>> GetRelatedStrings(WordContext ctx, RelatedType type, string word)
         {
             if (string.IsNullOrWhiteSpace(word)) throw new ArgumentNullException(nameof(word));
+            if (!Enum.IsDefined(typeof(RelatedType), type) || type == RelatedType.None) throw new ArgumentException(nameof(type));
             var word_data = await ctx.Words
                 .Where(w => w.Content == word)
+                .Include(w => w.RelatedStrings)
                 .ToAsyncEnumerable()
                 .SingleOrDefault();
             return await word_data.RelatedStrings
-                .Where(rw => rw.Type == type)
+                .Where(rs => rs.Type == type)
+                .Select(rs => rs.Content)
                 .ToAsyncEnumerable()
                 .ToList();
         }
-        
+
         /// <summary>
-         /// Returns the value of a single word, including antonyms, synonyms, and examples.
-         /// </summary>
-         /// <typeparam name="T">Type</typeparam>
-         /// <param name="word">word</param>
-         /// <param name="getter">getter</param>
-         /// <returns>Asynchronous operation to get word data</returns>
-        public static async Task<T> GetWordDetail<T>(WordContext ctx, string word, Func<Word, T> getter)
+        /// Returns the value of a single word, including antonyms, synonyms, and examples.
+        /// </summary>
+        /// <typeparam name="T">Type</typeparam>
+        /// <typeparam name="F">Type</typeparam>
+        /// <param name="word">word</param>
+        /// <param name="getter">getter</param>
+        /// <returns>Asynchronous operation to get word data</returns>
+        private static async Task<T> GetWordDetail<T, F>(WordContext ctx, string word, Func<Word, T> getter, Expression<Func<Word, ICollection<F>>> includer)
         {
             if (string.IsNullOrWhiteSpace(word)) throw new ArgumentNullException(nameof(word));
             if (getter == null) throw new ArgumentNullException(nameof(getter));
             var word_data = await ctx.Words
                 .Where(w => w.Content == word)
+                .Include(includer)
                 .ToAsyncEnumerable()
                 .SingleOrDefault();
+            if (word_data == default(Word))
+            {
+                return default;
+            }
             return getter(word_data);
         }
 
-        public static async Task<ChangeMod> ChangeRelatedString(WordContext ctx, RelatedStringType type, string word, string old_string, string new_string)
+        public static async Task<ChangeMod> ChangeRelatedString(WordContext ctx, RelatedType type, string word, string old_string, string new_string)
         {
             if (string.IsNullOrWhiteSpace(word)) throw new ArgumentNullException(nameof(word));
-            if (string.IsNullOrWhiteSpace(new_string)) throw new ArgumentNullException(nameof(new_string));
+            if (!Enum.IsDefined(typeof(RelatedType), type) || type == RelatedType.None) throw new ArgumentException(nameof(type));
 
-            ChangeMod mod = 0;
-
-            var target_word = await GetWordDetail(ctx, word, a => new { a.WordID, a.RelatedStrings });
-            if (old_string != null)
+            using (var t = await ctx.Database.BeginTransactionAsync())
             {
-                var existing_example = await target_word.RelatedStrings
-                    .Where(e => e.Content == old_string)
-                    .Where(e => e.Type == type)
-                    .ToAsyncEnumerable()
-                    .SingleOrDefault();
-                target_word.RelatedStrings.Remove(existing_example);
-                await ctx.SaveChangesAsync();
-                mod |= ChangeMod.Del;
-            }
-            if (new_string != null)
-            {
-                var created_example = new RelatedString() { Type = type, WordID = target_word.WordID, Content = new_string };
-                target_word.RelatedStrings.Add(created_example);
-                await ctx.SaveChangesAsync();
-                mod |= ChangeMod.Add;
-            }
+                ChangeMod mod = 0;
 
-            return mod;
+                var target_word = await GetWordDetail(ctx, word, a => new { a.WordID, a.RelatedStrings }, w => w.RelatedStrings);
+                if (target_word != null)
+                {
+                    if (old_string != null)
+                    {
+                        var existing_example = await target_word.RelatedStrings
+                            .Where(e => e.Content == old_string)
+                            .Where(e => e.Type == type)
+                            .ToAsyncEnumerable()
+                            .SingleOrDefault();
+                        if (existing_example != null)
+                        {
+                            target_word.RelatedStrings.Remove(existing_example);
+                            await ctx.SaveChangesAsync();
+                            mod |= ChangeMod.Del;
+                        }
+                    }
+                    if (new_string != null)
+                    {
+                        var created_example = new RelatedString() { Type = type, WordID = target_word.WordID, Content = new_string };
+                        target_word.RelatedStrings.Add(created_example);
+                        await ctx.SaveChangesAsync();
+                        mod |= ChangeMod.New;
+                    }
+
+                    t.Commit();
+                }
+
+                return mod;
+            }
         }
 
-        public static async Task<ChangeMod> ChangeRelatedWord(WordContext ctx, RelatedWordType type, string word, string old_one, string new_one)
+        public static async Task<ChangeMod> ChangeRelatedWord(WordContext ctx, RelatedType type, string word, string old_one, string new_one)
         {
             if (string.IsNullOrWhiteSpace(word)) throw new ArgumentNullException(nameof(word));
-            if (string.IsNullOrWhiteSpace(new_one)) throw new ArgumentNullException(nameof(new_one));
+            if (!Enum.IsDefined(typeof(RelatedType), type) || type == RelatedType.None) throw new ArgumentException(nameof(type));
 
-            ChangeMod mod = 0;
+            using (var t = await ctx.Database.BeginTransactionAsync())
+            {
+                ChangeMod mod = 0;
 
-            var target_word = await GetWordDetail(ctx, word, a => new { a.WordID, a.RelatedWords });
-            if (old_one != null)
-            {
-                var existing_words = await target_word.RelatedWords
-                    .Where(rw => rw.Type == type)
-                    .Join(ctx.Words, s => s.RelatedWordID, i => i.WordID, (s, i) => new { RelatedWord = s, i.Content })
-                    .Where(e => e.Content == old_one)
-                    .ToAsyncEnumerable()
-                    .SingleOrDefault();
-                target_word.RelatedWords.Remove(existing_words.RelatedWord);
-                await ctx.SaveChangesAsync();
-                mod |= ChangeMod.Del;
-            }
-            if (new_one != null)
-            {
-                int relatedWordID = await GetWordID(ctx, new_one);
-                if (relatedWordID == 0)
+                var target_word = await GetWordDetail(ctx, word, a => new { a.WordID, a.RelatedWords }, w => w.RelatedWords);
+                if (target_word != null)
                 {
-                    relatedWordID = await NewWordAndID(ctx, new_one);
-                }
-                var created_related_word = new RelatedWord() { Type = type, WordID = target_word.WordID, RelatedWordID = relatedWordID };
-                target_word.RelatedWords.Add(created_related_word);
-                await ctx.SaveChangesAsync();
-                mod |= ChangeMod.Add;
-            }
+                    if (old_one != null)
+                    {
+                        var existing_related_word = await target_word.RelatedWords
+                            .Where(rw => rw.Type == type)
+                            .Join(ctx.Words, s => s.RelatedWordID, i => i.WordID, (s, i) => new { RelatedWord = s, i.Content, Word = i })
+                            .Where(e => e.Content == old_one)
+                            .ToAsyncEnumerable()
+                            .SingleOrDefault();
 
-            return mod;
+                        if (existing_related_word != null)
+                        {
+                            target_word.RelatedWords.Remove(existing_related_word.RelatedWord);
+
+                            ctx.Entry(existing_related_word.Word)
+                                .Collection(w => w.RelatedWords)
+                                .Load();
+                            var related = existing_related_word.Word;
+                            var related_target_word = await related.RelatedWords
+                                .Where(a => a.Type == type && a.RelatedWordID == target_word.WordID)
+                                .ToAsyncEnumerable()
+                                .SingleOrDefault();
+                            if (related_target_word != null)
+                            {
+                                related.RelatedWords.Remove(related_target_word);
+                            }
+                            mod |= ChangeMod.Del;
+                        }
+
+                        await ctx.SaveChangesAsync();
+                    }
+                    if (new_one != null)
+                    {
+                        var related_word = await GetWordDetail(ctx, new_one, a => a, w => w.RelatedWords);
+                        if (related_word == null)
+                        {
+                            related_word = await NewWord(ctx, new_one);
+                        }
+                        var created_related_word = new RelatedWord() { Type = type, WordID = target_word.WordID, RelatedWordID = related_word.WordID };
+                        target_word.RelatedWords.Add(created_related_word);
+                        await ctx.SaveChangesAsync();
+
+                        var created_related_word_pair = new RelatedWord() { Type = type, WordID = related_word.WordID, RelatedWordID = target_word.WordID };
+                        related_word.RelatedWords.Add(created_related_word_pair);
+                        await ctx.SaveChangesAsync();
+
+                        mod |= ChangeMod.New;
+                    }
+
+                    t.Commit();
+                }
+
+                return mod;
+            }
         }
 
         private static async Task<int> GetWordID(WordContext ctx, string word)

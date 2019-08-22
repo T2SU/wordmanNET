@@ -28,6 +28,7 @@ namespace wordman.SQLite
                 .HasForeignKey(a => a.WordID)
                 .HasConstraintName("foreignKey_Word_RelatedStrings");
 
+
             modelBuilder.Entity<Word>()
                 .HasIndex(w => w.Content)
                 .IsUnique();

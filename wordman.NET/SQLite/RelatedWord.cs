@@ -14,8 +14,8 @@ namespace wordman.SQLite
 
         public int RelatedWordID { get; set; }
 
-        public RelatedWordType Type { get; set; }
+        public RelatedType Type { get; set; }
 
-        public Word Word { get; set; }
+        public virtual Word Word { get; set; }
     }
 }
