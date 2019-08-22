@@ -241,9 +241,11 @@ function word_detail_open(event) {
         var save_word_detail = function (item, newvalue, insert_form, detail_type) {
             if (!item.length && !newvalue.length)
                 return;
-            if (item.data('processing') === 'true')
-                return;
-            item.data('processing', 'true');
+            if (item.length) {
+                if (item.data('processing') === 'true')
+                    return;
+                item.data('processing', 'true');
+            }
 
             dat = { "word": word, "detail_type": detail_type };
 
@@ -270,7 +272,9 @@ function word_detail_open(event) {
                     } else if (res === 'mod') {
                         item.html(newvalue);
                     }
-                    item.data('processing', '');
+                    if (item.length) {
+                        item.data('processing', '');
+                    }
                 },
                 error: function (res, st, req) {
                     alert('서버에 저장하는 작업이 실패하였습니다.');
