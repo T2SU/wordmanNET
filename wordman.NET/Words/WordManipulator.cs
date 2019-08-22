@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using wordman.SQLite;
+using wordman.Utils;
 
 namespace wordman.Words
 {
@@ -38,9 +39,9 @@ namespace wordman.Words
         /// </summary>
         /// <param name="page"></param>
         /// <returns></returns>
-        public static async Task<List<Word>> LoadWordsUsingDefault(WordContext ctx, int page)
+        public static async Task<List<Word>> LoadWordsUsingDefault(WordContext ctx, ListState state, int page)
         {
-            return await LoadWords<Word, int, Word>(ctx, w => w.WordID, w => w.Compact(), Order.Desc, page);
+            return await LoadWords<Word, int, Word>(ctx, state, w => w.WordID, w => w.Compact(), Order.Desc, page);
         }
 
         /// <summary>
@@ -55,12 +56,13 @@ namespace wordman.Words
         /// <param name="page">The page to load. It works by skipping <code>(page - 1) * limit</code>.</param>
         /// <param name="limit">Number of words per page. Default value is 50.</param>
         /// <returns>Asynchronous operation to return converted words</returns>
-        public static async Task<List<TRetType>> LoadWords<TInType, TOrderingType, TRetType>(WordContext ctx, 
+        public static async Task<List<TRetType>> LoadWords<TInType, TOrderingType, TRetType>(WordContext ctx, ListState state,
             Func<TInType, TOrderingType> keyExpr,
                 Func<TInType, TRetType> selector,
                 Order order,
                 int page,
-                int limit = 50)
+                int limit = PageUtils.LimitPerPage,
+                params Func<TInType, bool>[] filters)
             where TInType : class where TRetType : class
         {
             if (keyExpr == null) throw new ArgumentNullException(nameof(keyExpr));
@@ -83,6 +85,13 @@ namespace wordman.Words
                 default:
                     break;
             }
+            foreach (var filter in filters)
+            {
+                query = query.Where(filter);
+            }
+
+            state.TotalCount = query.Count();
+
             query = query.Skip((page - 1) * limit);
             query = query.Take(limit);
 

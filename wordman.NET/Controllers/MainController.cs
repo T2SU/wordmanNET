@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using wordman.Mvc;
 using wordman.SQLite;
+using wordman.Utils;
 using wordman.Words;
 
 namespace wordman.Controllers
@@ -21,8 +22,12 @@ namespace wordman.Controllers
             using (var ctx = new WordContext())
             using (var t = await ctx.Database.BeginTransactionAsync())
             {
+                var state = new ListState();
+
                 ViewBag.AppVer = App.Version;
-                ViewBag.Data = await WordManipulator.LoadWordsUsingDefault(ctx, page);
+                ViewBag.Data = await WordManipulator.LoadWordsUsingDefault(ctx, state, page);
+                ViewBag.Page = page;
+                ViewBag.State = state;
                 return View();
             }
         }
