@@ -92,14 +92,11 @@ namespace wordman.Words
                     pInfo = inType.GetProperty(model.Column);
                 }
 
-                var enumarableType = typeof(Queryable);
-                var method = enumarableType.GetMethods()
+                var queryableType = typeof(Queryable);
+                var method = queryableType.GetMethods()
                  .Where(m => m.Name == queryOrder && m.IsGenericMethodDefinition)
-                 .Where(m =>
-                 {
-                     var parameters = m.GetParameters().ToList();
-                     return parameters.Count == 2;
-                 }).Single();
+                 .Where(m => m.GetParameters().Count() == 2)
+                 .Single();
 
                 MethodInfo order = method.MakeGenericMethod(typeof(TInType), pInfo.PropertyType);
                 query = (IOrderedQueryable<TInType>)order.Invoke(order, new object[] { query, keyExpr });
