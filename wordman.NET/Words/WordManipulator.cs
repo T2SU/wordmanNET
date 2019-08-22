@@ -214,9 +214,9 @@ namespace wordman.Words
                         {
                             target_word.RelatedWords.Remove(existing_related_word.RelatedWord);
 
-                            ctx.Entry(existing_related_word.Word)
+                            await ctx.Entry(existing_related_word.Word)
                                 .Collection(w => w.RelatedWords)
-                                .Load();
+                                .LoadAsync();
                             var related = existing_related_word.Word;
                             var related_target_word = await related.RelatedWords
                                 .Where(a => a.Type == type && a.RelatedWordID == target_word.WordID)
