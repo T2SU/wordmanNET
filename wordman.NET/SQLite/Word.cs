@@ -19,11 +19,9 @@ namespace wordman.SQLite
 
         public DateTime LastReferenced { get; set; }
 
-        public List<Antonym> Antonyms { get; set; }
+        public List<RelatedWord> RelatedWords { get; set; }
 
-        public List<Synonym> Synonyms { get; set; }
-
-        public List<Example> Examples { get; set; }
+        public List<RelatedString> RelatedStrings { get; set; }
 
         public Word Compact()
         {

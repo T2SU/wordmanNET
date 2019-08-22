@@ -10,10 +10,6 @@ namespace wordman.SQLite
     {
         public DbSet<Word> Words { get; set; }
 
-        public DbSet<Antonym> Antonyms { get; set; }
-
-        public DbSet<Synonym> Synonyms { get; set; }
-
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlite("Data Source=word.db;");
@@ -21,25 +17,25 @@ namespace wordman.SQLite
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Antonym>()
+            modelBuilder.Entity<RelatedWord>()
                 .HasOne(a => a.Word)
-                .WithMany(w => w.Antonyms)
+                .WithMany(w => w.RelatedWords)
                 .HasForeignKey(a => a.WordID)
-                .HasConstraintName("foreignKey_Word_Antonyms");
-            modelBuilder.Entity<Synonym>()
-                .HasOne(s => s.Word)
-                .WithMany(w => w.Synonyms)
-                .HasForeignKey(a => a.WordID)
-                .HasConstraintName("foreignKey_Word_Synonyms");
-            modelBuilder.Entity<Example>()
+                .HasConstraintName("foreignKey_Word_RelatedWords");
+            modelBuilder.Entity<RelatedString>()
                 .HasOne(a => a.Word)
-                .WithMany(w => w.Examples)
+                .WithMany(w => w.RelatedStrings)
                 .HasForeignKey(a => a.WordID)
-                .HasConstraintName("foreignKey_Word_Examples");
+                .HasConstraintName("foreignKey_Word_RelatedStrings");
 
             modelBuilder.Entity<Word>()
                 .HasIndex(w => w.Content)
                 .IsUnique();
+
+            modelBuilder.Entity<RelatedWord>()
+                .HasIndex(r => new { r.Type, r.WordID, r.RelatedWordID }).IsUnique();
+            modelBuilder.Entity<RelatedString>()
+                .HasIndex(r => new { r.Type, r.WordID, r.Content }).IsUnique();
         }
     }
 }

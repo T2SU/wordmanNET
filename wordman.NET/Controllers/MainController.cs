@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using wordman.Mvc;
 using wordman.SQLite;
 using wordman.Words;
 
@@ -36,6 +37,7 @@ namespace wordman.Controllers
                 try
                 {
                     var new_word = await WordManipulator.NewWord(ctx, word);
+                    t.Commit();
                     return new JsonResult(new
                     {
                         word = new_word.Content,
@@ -60,11 +62,11 @@ namespace wordman.Controllers
                 switch (detail_type)
                 {
                     case "example":
-                        return new JsonResult(await WordManipulator.GetWordDetail(ctx, word, w => w.Examples));
+                        return new JsonResult(await WordManipulator.GetRelatedStrings(ctx, RelatedStringType.Example, word));
                     case "synonym":
-                        return new JsonResult(await WordManipulator.GetWordDetail(ctx, word, w => w.Synonyms));
+                        return new JsonResult(await WordManipulator.GetRelatedWords(ctx, RelatedWordType.Synonym, word));
                     case "antonym":
-                        return new JsonResult(await WordManipulator.GetWordDetail(ctx, word, w => w.Antonyms));
+                        return new JsonResult(await WordManipulator.GetRelatedWords(ctx, RelatedWordType.Antonym, word));
                     default:
                         return new StatusCodeResult(StatusCodes.Status400BadRequest);
                 }
@@ -75,7 +77,21 @@ namespace wordman.Controllers
         [Route("change_detail")]
         public async Task<IActionResult> ChangeDetail(string word, string detail_type, string oldone, string newone)
         {
-            // 뇌정지 ㅜㅜ
+            using (var ctx = new WordContext())
+            using (var t = await ctx.Database.BeginTransactionAsync())
+            {
+                switch (detail_type)
+                {
+                    case "example":
+                        return new EnumResult(await WordManipulator.ChangeRelatedString(ctx, RelatedStringType.Example, word, oldone, newone));
+                    case "synonym":
+                        return new EnumResult(await WordManipulator.ChangeRelatedWord(ctx, RelatedWordType.Synonym, word, oldone, newone));
+                    case "antonym":
+                        return new EnumResult(await WordManipulator.ChangeRelatedWord(ctx, RelatedWordType.Antonym, word, oldone, newone));
+                    default:
+                        return new StatusCodeResult(StatusCodes.Status400BadRequest);
+                }
+            }
         }
     }
 }
