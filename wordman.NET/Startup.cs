@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace wordman.NET
+namespace wordman
 {
     public class Startup
     {
