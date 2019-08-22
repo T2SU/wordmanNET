@@ -17,28 +17,36 @@ namespace wordman.Controllers
         [Route("index")]
         public async Task<IActionResult> Index(int page = 1)
         {
-            ViewBag.AppVer = App.Version;
-            ViewBag.Data = await WordManipulator.LoadWordsUsingDefault(page);
-            return View();
+            using (var ctx = new WordContext())
+            using (var t = await ctx.Database.BeginTransactionAsync())
+            {
+                ViewBag.AppVer = App.Version;
+                ViewBag.Data = await WordManipulator.LoadWordsUsingDefault(ctx, page);
+                return View();
+            }
         }
 
         [HttpPost]
         [Route("add")]
         public async Task<IActionResult> Add(string word)
         {
-            try
+            using (var ctx = new WordContext())
+            using (var t = await ctx.Database.BeginTransactionAsync())
             {
-                var new_word = await WordManipulator.NewWord(word);
-                return new JsonResult(new
+                try
                 {
-                    word = new_word.Content,
-                    @ref = new_word.Referenced,
-                    time = new_word.LastReferenced.ToString()
-                });
-            }
-            catch (DbUpdateException)
-            {
-                return new StatusCodeResult(StatusCodes.Status400BadRequest);
+                    var new_word = await WordManipulator.NewWord(ctx, word);
+                    return new JsonResult(new
+                    {
+                        word = new_word.Content,
+                        @ref = new_word.Referenced,
+                        time = new_word.LastReferenced.ToString()
+                    });
+                }
+                catch (DbUpdateException)
+                {
+                    return new StatusCodeResult(StatusCodes.Status400BadRequest);
+                }
             }
         }
 
@@ -46,16 +54,20 @@ namespace wordman.Controllers
         [Route("get_detail")]
         public async Task<IActionResult> GetDetail(string word, string detail_type)
         {
-            switch (detail_type)
+            using (var ctx = new WordContext())
+            using (var t = await ctx.Database.BeginTransactionAsync())
             {
-                case "example":
-                    return new JsonResult(await WordManipulator.GetWordDetail(word, w => w.Examples));
-                case "synonym":
-                    return new JsonResult(await WordManipulator.GetWordDetail(word, w => w.Synonyms));
-                case "antonym":
-                    return new JsonResult(await WordManipulator.GetWordDetail(word, w => w.Antonyms));
-                default:
-                    return new StatusCodeResult(StatusCodes.Status400BadRequest);
+                switch (detail_type)
+                {
+                    case "example":
+                        return new JsonResult(await WordManipulator.GetWordDetail(ctx, word, w => w.Examples));
+                    case "synonym":
+                        return new JsonResult(await WordManipulator.GetWordDetail(ctx, word, w => w.Synonyms));
+                    case "antonym":
+                        return new JsonResult(await WordManipulator.GetWordDetail(ctx, word, w => w.Antonyms));
+                    default:
+                        return new StatusCodeResult(StatusCodes.Status400BadRequest);
+                }
             }
         }
 
