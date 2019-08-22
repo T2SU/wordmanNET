@@ -136,10 +136,13 @@ namespace wordman.Words
         {
             if (string.IsNullOrWhiteSpace(word)) throw new ArgumentNullException(nameof(word));
             if (getter == null) throw new ArgumentNullException(nameof(getter));
-            var word_data = await ctx.Words
-                .Where(w => w.Content == word)
-                .Include(includer)
-                .ToAsyncEnumerable()
+            var word_data_query = ctx.Words
+                .Where(w => w.Content == word);
+            if (includer != null)
+            {
+                word_data_query = word_data_query.Include(includer);
+            }
+            var word_data = await word_data_query.ToAsyncEnumerable()
                 .SingleOrDefault();
             if (word_data == default(Word))
             {
@@ -253,6 +256,27 @@ namespace wordman.Words
                 }
 
                 return mod;
+            }
+        }
+
+        public static async Task<Word> UpdateRef(WordContext ctx, string word)
+        {
+            if (string.IsNullOrWhiteSpace(word)) throw new ArgumentNullException(nameof(word));
+            using (var t = await ctx.Database.BeginTransactionAsync())
+            {
+                var target_word = await GetWordDetail(ctx, 
+                    word, 
+                    a => a, 
+                    (Expression<Func<Word,ICollection<object>>>)null);
+                if (target_word != null)
+                {
+                    target_word.Referenced++;
+                    target_word.LastReferenced = DateTime.Now;
+                    await ctx.SaveChangesAsync();
+                    t.Commit();
+                    return target_word;
+                }
+                return null;
             }
         }
 

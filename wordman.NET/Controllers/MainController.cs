@@ -38,12 +38,7 @@ namespace wordman.Controllers
                 {
                     var new_word = await WordManipulator.NewWord(ctx, word);
                     t.Commit();
-                    return new JsonResult(new
-                    {
-                        word = new_word.Content,
-                        @ref = new_word.Referenced,
-                        time = new_word.LastReferenced.ToString()
-                    });
+                    return new WordResult(new_word);
                 }
                 catch (DbUpdateException)
                 {
@@ -90,6 +85,16 @@ namespace wordman.Controllers
                     default:
                         return new StatusCodeResult(StatusCodes.Status400BadRequest);
                 }
+            }
+        }
+
+        [HttpPost]
+        [Route("update_ref")]
+        public async Task<IActionResult> UpdateRef(string word)
+        {
+            using (var ctx = new WordContext())
+            {
+                return new WordResult(await WordManipulator.UpdateRef(ctx, word));
             }
         }
     }
