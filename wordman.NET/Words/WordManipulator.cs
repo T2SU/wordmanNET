@@ -47,34 +47,64 @@ namespace wordman.Words
         /// <param name="page">The page to load. It works by skipping <code>(page - 1) * limit</code>.</param>
         /// <param name="limit">Number of words per page. Default value is 50.</param>
         /// <returns>Asynchronous operation to return converted words</returns>
-        public static async Task<List<TRetType>> LoadWords<TInType, TOrderingType, TRetType>(WordContext ctx, ListState state,
-            Func<TInType, TOrderingType> keyExpr,
+        public static async Task<List<TRetType>> LoadWords<TInType, TRetType>(WordContext ctx, ListState state,
                 Func<TInType, TRetType> selector,
                 WordViewModel model,
                 int limit = PageUtils.LimitPerPage,
                 params Func<TInType, bool>[] filters)
             where TInType : class where TRetType : class
         {
-            if (keyExpr == null) throw new ArgumentNullException(nameof(keyExpr));
             if (selector == null) throw new ArgumentNullException(nameof(selector));
             if (limit <= 0 || limit > 2000) throw new ArgumentOutOfRangeException(nameof(limit));
 
             // Generate a query dynamically.
 
-            var param = Expression.Parameter(typeof(TInType), "w");
-
-            IEnumerable<TInType> query = ctx.Set<TInType>();
+            string queryOrder = "";
             switch (model.Order)
             {
                 case Order.Asc:
-                    query = query.OrderBy(keyExpr);
+                    queryOrder = "OrderBy";
                     break;
                 case Order.Desc:
-                    query = query.OrderByDescending(keyExpr);
+                    queryOrder = "OrderByDescending";
                     break;
                 default:
                     break;
             }
+
+            IEnumerable<TInType> query = ctx.Set<TInType>();
+
+            if (!string.IsNullOrEmpty(queryOrder))
+            {
+                var inType = typeof(TInType);
+                PropertyInfo pInfo;
+
+                var param = Expression.Parameter(typeof(TInType), "w");
+                LambdaExpression keyExpr;
+                if (model.Column == null)
+                {
+                    keyExpr = Expression.Lambda(Expression.PropertyOrField(param, nameof(Word.WordID)), param);
+                    pInfo = inType.GetProperty(nameof(Word.WordID));
+                }
+                else
+                {
+                    keyExpr = Expression.Lambda(Expression.PropertyOrField(param, model.Column), param);
+                    pInfo = inType.GetProperty(model.Column);
+                }
+
+                var enumarableType = typeof(Queryable);
+                var method = enumarableType.GetMethods()
+                 .Where(m => m.Name == queryOrder && m.IsGenericMethodDefinition)
+                 .Where(m =>
+                 {
+                     var parameters = m.GetParameters().ToList();
+                     return parameters.Count == 2;
+                 }).Single();
+
+                MethodInfo order = method.MakeGenericMethod(typeof(TInType), pInfo.PropertyType);
+                query = (IOrderedQueryable<TInType>)order.Invoke(order, new object[] { query, keyExpr });
+            }
+
             foreach (var filter in filters)
             {
                 query = query.Where(filter);

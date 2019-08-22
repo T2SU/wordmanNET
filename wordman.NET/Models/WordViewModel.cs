@@ -1,28 +1,46 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 using wordman.Words;
 
 namespace wordman.Models
 {
     public class WordViewModel
     {
-        [FromQuery(Name = "page")]
         public int Page { get; set; } = 1;
 
-        [FromQuery(Name = "keyword")]
         [StringLength(2000)]
         public string Keyword { get; set; }
 
-        [FromQuery(Name = "order")]
+        public string Column { get; set; }
+
         public Order Order { get; set; } = Order.Desc;
+
+        private WordViewModel Copy()
+        {
+            return new WordViewModel() { Keyword = Keyword, Page = Page, Order = Order, Column = Column };
+        }
 
         public WordViewModel CopyByPage(int page)
         {
-            return new WordViewModel() { Keyword = Keyword, Page = page, Order = Order };
+            var copied = Copy();
+            copied.Page = page;
+            return copied;
+        }
+
+        public WordViewModel CopyByOrder(string column)
+        {
+            var copied = Copy();
+            if (copied.Column == column)
+            {
+                if (copied.Order == Order.Asc) copied.Order = Order.Desc;
+                else copied.Order = Order.Asc;
+            }
+            else
+            {
+                copied.Order = Order.Desc;
+                copied.Column = column;
+            }
+            return copied;
         }
     }
 }

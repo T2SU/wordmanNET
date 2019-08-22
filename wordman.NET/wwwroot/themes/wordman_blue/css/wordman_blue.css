@@ -62,6 +62,15 @@ ul {
 	padding: .75rem;
 }
 
+.sorter > a, .sorter > a:link {
+    color: #fff;
+}
+
+.sorter > a:visited, .sorter > a:hover, .sorter > a:active {
+    color: #bebebe;
+    text-decoration: none;
+}
+
 .tdata {
 	padding: .75rem;
 	border-top: 1px solid #dee2e6;

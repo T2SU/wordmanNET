@@ -1,6 +1,7 @@
 ﻿@using wordman.Models
 @using wordman.SQLite
 @using wordman.Utils
+@using wordman.Words
 @model WordViewModel
 
 <!DOCTYPE html>
@@ -8,10 +9,11 @@
 <head>
     <meta charset="utf-8">
     <title>Test</title>
-    <link rel="stylesheet" href="~/themes/wordman_blue/css/bootstrap.min.css">
-    <link rel="stylesheet" href="~/themes/wordman_blue/css/all.css">
-    <link rel="stylesheet" href="~/themes/wordman_blue/css/loading.css">
-    <link rel="stylesheet" href="~/themes/wordman_blue/css/wordman_blue.css">
+    <link rel="stylesheet" href="~/themes/wordman_blue/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/themes/wordman_blue/css/all.css" />
+    <link rel="stylesheet" href="~/themes/wordman_blue/css/loading.css" />
+    <link rel="stylesheet" href="~/themes/wordman_blue/css/wordman_blue.css" />
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet" />
     <script src="~/themes/wordman_blue/js/jquery-3.3.1.min.js"></script>
     <script src="~/themes/wordman_blue/js/bootstrap.min.js"></script>
     <script src="~/themes/wordman_blue/js/all.js"></script>
@@ -49,9 +51,21 @@
             <table class="table">
                 <thead class="thead-dark">
                     <tr>
-                        <th data-sortable="true" class="c1">Word</th>
-                        <th data-sortable="true" class="c2">Refer</th>
-                        <th data-sortable="true" class="c3 auto-hidden">Last Referred</th>
+                        <th data-sortable="true" class="c1 sorter">
+                            <a href="@Url.Action("", "Main", Model.CopyByOrder(nameof(Word.Content)))">
+                                Word <i class="fa fa-fw fa-sort"></i>
+                            </a>
+                        </th>
+                        <th data-sortable="true" class="c2 sorter">
+                            <a href="@Url.Action("", "Main", Model.CopyByOrder(nameof(Word.Referenced)))">
+                                Refer <i class="fa fa-fw fa-sort"></i>
+                            </a>
+                        </th>
+                        <th data-sortable="true" class="c3 auto-hidden sorter">
+                            <a href="@Url.Action("", "Main", Model.CopyByOrder(nameof(Word.LastReferenced)))">
+                                Last Referred <i class="fa fa-fw fa-sort"></i>
+                            </a>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="word_rows">

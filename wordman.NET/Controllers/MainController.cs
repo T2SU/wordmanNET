@@ -18,6 +18,7 @@ namespace wordman.Controllers
     {
         [Route("")]
         [Route("index")]
+        [HttpGet]
         public async Task<IActionResult> Index(WordViewModel model)
         {
             using (var ctx = new WordContext())
@@ -32,8 +33,8 @@ namespace wordman.Controllers
                 {
                     filters.Add(w => w.Content.Contains(model.Keyword));
                 }
+
                 ViewBag.Data = await WordManipulator.LoadWords(ctx, state,
-                    w => w.WordID,
                     w => w.Compact(),
                     model,
                     PageUtils.LimitPerPage,
